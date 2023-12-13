@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_holo_date_picker/date_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:my_diaryfood_app/model/diaryfood.dart';
+import 'package:my_diaryfood_app/services/call_api.dart';
 
 class AddDiaryFoodUI extends StatefulWidget {
   const AddDiaryFoodUI({super.key});
@@ -112,7 +114,7 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
           ))
       .toList();
   //ตัวแปร foodProvine เก็บตัวแปรจังหวัดที่ User เลือก
-  String foodProvine = 'กรุงเทพมหานคร';
+  String foodProvince = 'กรุงเทพมหานคร';
 
   //เมธอดแสดงปฏิทิน
   showCalendar() async {
@@ -555,10 +557,10 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                       items: items,
                       onChanged: (String? value) {
                         setState(() {
-                          foodProvine = value!;
+                          foodProvince = value!;
                         });
                       },
-                      value: foodProvine,
+                      value: foodProvince,
                       style: GoogleFonts.kanit(
                           color: Colors.grey[800],
                           fontSize: MediaQuery.of(context).size.height * 0.02),
@@ -613,6 +615,55 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                           showWarningDialog(context, "ป้อนวันที่......");
                         } else {
                           //code ส่วนของการส่งข้อมูลไปบันทึกที่ server
+                          Diaryfood diaryfood = Diaryfood(
+                            foodShopname: foodShopCtrl.text.trim(),
+                            foodImage: foodImageBasse64,
+                            foodPay: foodPayCtrl.text.trim(),
+                            foodMeal: meal.toString(),
+                            foodDate: foodDateCtrl.text.trim(),
+                            foodProvince: foodProvince,
+                          );
+                          callApi
+                              .calAPIInserDiaryfood(diaryfood)
+                              .then(
+                                (value) => showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Align(
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'ผลการทำงาน',
+                                        style: GoogleFonts.kanit(),
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'บันทึกเรียบร้อยแล้ว',
+                                      style: GoogleFonts.kanit(),
+                                    ),
+                                    actions: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              'ตกลง',
+                                              style: GoogleFonts.kanit(),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .then((value) => Navigator.pop(context));
                         }
                       },
                       child: Text(
