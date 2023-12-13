@@ -186,7 +186,7 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
       default:
         month = 'ธันวาคม';
     }
-    return day + '  ' + month + '  พ.ศ. ' + year;
+    return day + '  ' + month + year;
   }
 
   //ตัวแปรที่ใช้กับการเลือกรูป จากแกลอรี่ หรือกล้องใช้ชื่อว่า foodImageSelected
@@ -300,6 +300,9 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                         shape: BoxShape.circle,
                         border: Border.all(width: 4, color: Colors.green),
                         image: DecorationImage(
+                            // image: AssetImage(
+                            //   'assets/images/banner.png',
+                            // ),
                             image: foodImageSelected == null
                                 ? AssetImage(
                                     'assets/images/banner.png',

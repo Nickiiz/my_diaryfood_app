@@ -6,6 +6,7 @@ import 'package:my_diaryfood_app/model/diaryfood.dart';
 import 'package:my_diaryfood_app/services/call_api.dart';
 import 'package:my_diaryfood_app/utils/env.dart';
 import 'package:my_diaryfood_app/views/add_diaryfood_ui.dart';
+import 'package:my_diaryfood_app/views/modify_diaryfood_ui.dart';
 
 class HomeUI extends StatefulWidget {
   const HomeUI({super.key});
@@ -50,7 +51,7 @@ class _HomeUIState extends State<HomeUI> {
               context,
               MaterialPageRoute(
                 builder: (context) => AddDiaryFoodUI(),
-              ));
+              )).then((value) => getAllDiaryfood());
         },
         child: Icon(
           Icons.add,
@@ -58,7 +59,7 @@ class _HomeUIState extends State<HomeUI> {
         ),
         backgroundColor: Colors.green,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       body: Center(
         child: Column(
           children: [
@@ -88,6 +89,30 @@ class _HomeUIState extends State<HomeUI> {
                           //layout ของ ListView ที่จะนำข้อมูลมาแสดง
                           itemBuilder: (context, index) {
                             return ListTile(
+                              onTap: () {
+                                //เอาข้อมูลที่ได้มาจาก server เก็บไว้ในตัวแปร
+                                Diaryfood diaryfood = Diaryfood(
+                                  foodId: snapshot.data[index].foodId,
+                                  foodShopname:
+                                      snapshot.data[index].foodShopname,
+                                  foodImage: snapshot.data[index].foodImage,
+                                  foodPay: snapshot.data[index].foodPay,
+                                  foodMeal: snapshot.data[index].foodMeal,
+                                  foodDate: snapshot.data[index].foodDate,
+                                  foodProvince:
+                                      snapshot.data[index].foodProvince,
+                                );
+
+                                //เปิดหน้าจอ modify พร้อมกับส่งข้อมูลในตัวแปรไปแสดงด้วย
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ModifyDiaryFoodUI(
+                                      diaryfood: diaryfood,
+                                    ),
+                                  ),
+                                ).then((value) => getAllDiaryfood());
+                              },
                               leading: Image.network(
                                 // Env.domainURL +
                                 //     '/mydiaryapi/images/pic1702281660252.jpg',
