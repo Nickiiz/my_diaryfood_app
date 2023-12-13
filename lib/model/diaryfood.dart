@@ -1,13 +1,13 @@
 class Diaryfood {
   String? message;
-  int? foodId;
+  String? foodId;
   String? foodShopname;
   String? foodImage;
-  int? foodPay;
-  int? foodMeal;
+  String? foodPay;
+  String? foodMeal;
   String? foodDate;
-  double? foodLat;
-  double? foodLng;
+  String? foodLat;
+  String? foodLng;
   String? foodProvince;
 
   Diaryfood(

@@ -1,8 +1,14 @@
-// ignore_for_file: prefer_const_constructors, sort_child_properties_last
+// ignore_for_file: prefer_const_constructors, sort_child_properties_last, prefer_is_empty
+
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_holo_date_picker/i18n/date_picker_i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_holo_date_picker/date_picker.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddDiaryFoodUI extends StatefulWidget {
   const AddDiaryFoodUI({super.key});
@@ -12,6 +18,11 @@ class AddDiaryFoodUI extends StatefulWidget {
 }
 
 class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
+  //ประกาศตัวแปรใช้กับ textfild วันที่กิน
+  TextEditingController foodDateCtrl = TextEditingController(text: '');
+  TextEditingController foodShopCtrl = TextEditingController(text: '');
+  TextEditingController foodPayCtrl = TextEditingController(text: '');
+
   //ตัวแปรใช้กับ GroupValue ของแต่ละ Radio
   int meal = 1;
   //ประกาศ/สร้างตัวแปรเพื่อเก็บข้อมูลรายการที่จะเอาไปใช้กับ DropdownButton
@@ -103,6 +114,147 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
   //ตัวแปร foodProvine เก็บตัวแปรจังหวัดที่ User เลือก
   String foodProvine = 'กรุงเทพมหานคร';
 
+  //เมธอดแสดงปฏิทิน
+  showCalendar() async {
+    DateTime? foodDatePicker = await DatePicker.showSimpleDatePicker(context,
+        initialDate: DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
+        ),
+        firstDate: DateTime(1900),
+        lastDate: DateTime(2100),
+        dateFormat: 'dd MMMM yyyy',
+        locale: DateTimePickerLocale.th,
+        looping: true,
+        confirmText: 'ตกลง',
+        cancelText: 'ยกเลิก',
+        titleText: 'เลือกวันที่กิน',
+        itemTextStyle: GoogleFonts.kanit(),
+        textColor: Colors.green);
+
+    //ทำให้เลือกวันที่แล้วจะมาแสดงที่ Textfild (แต่ยังแสดงค่าที่เป็น Standart อยู่ ต้องสร้างเมธอดแปลงวันที่)
+    setState(() {
+      foodDateCtrl.text = foodDatePicker != null
+          ? ConvertToThaiDate(foodDatePicker)
+          : foodDateCtrl.text;
+    });
+  }
+
+  //เมธอดแปลงวันที่ต่อจาก setState ข้างบน จะทำจาก (ปี เดือน วัน)เป็น(วัน เดือน ปี)
+  ConvertToThaiDate(date) {
+    String day = date.toString().substring(8, 10);
+    String year = (int.parse(date.toString().substring(0, 4)) + 543).toString();
+    String month = '';
+    int monthTemp = int.parse(date.toString().substring(5, 7));
+    switch (monthTemp) {
+      case 1:
+        month = 'มกราคม';
+        break;
+      case 2:
+        month = 'กุมภาพันธ์';
+        break;
+      case 3:
+        month = 'มีนาคม';
+        break;
+      case 4:
+        month = 'เมษายน';
+        break;
+      case 5:
+        month = 'พฤษภาคม';
+        break;
+      case 6:
+        month = 'มิถุนายน';
+        break;
+      case 7:
+        month = 'กรกฎาคม';
+        break;
+      case 8:
+        month = 'สิงหาคาม';
+        break;
+      case 9:
+        month = 'กันยายน';
+        break;
+      case 10:
+        month = 'ตุลาคม';
+        break;
+      case 11:
+        month = 'พฤศจิกายน';
+        break;
+      default:
+        month = 'ธันวาคม';
+    }
+    return day + '  ' + month + '  พ.ศ. ' + year;
+  }
+
+  //ตัวแปรที่ใช้กับการเลือกรูป จากแกลอรี่ หรือกล้องใช้ชื่อว่า foodImageSelected
+  XFile? foodImageSelected;
+  String? foodImageBasse64 = '';
+
+  //เมธอดที่ใช้ในการเปิดกล้อง หรือ เปิดแกลอรี่
+  openGalleryAndSelectImage() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.gallery, //******
+      imageQuality: 75,
+    );
+    if (photo == null) return;
+    foodImageBasse64 = base64Encode(File(photo.path).readAsBytesSync());
+    setState(() {
+      foodImageSelected = photo;
+    });
+  }
+
+  openCameraAndSelectImage() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera, //********
+      imageQuality: 75,
+    );
+    if (photo == null) return;
+    foodImageBasse64 = base64Encode(File(photo.path).readAsBytesSync());
+    setState(() {
+      foodImageSelected = photo;
+    });
+  }
+
+  //เมธอดแสดงข้อความเตือนจาก Validate ต่างๆบนหน้าจอ เช่นเลือกรูป ป้อนชื่อร้าน ป้อนค่าใช้จ่าย เลือกวันที่กิน
+  showWarningDialog(context, msg) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Align(
+          alignment: Alignment.center,
+          child: Text(
+            'คำเตือน',
+            style: GoogleFonts.kanit(),
+          ),
+        ),
+        content: Text(
+          msg,
+          style: GoogleFonts.kanit(),
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  'ตกลง',
+                  style: GoogleFonts.kanit(),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,14 +298,57 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                         shape: BoxShape.circle,
                         border: Border.all(width: 4, color: Colors.green),
                         image: DecorationImage(
-                            image: AssetImage(
-                              'assets/images/banner.png',
-                            ),
+                            image: foodImageSelected == null
+                                ? AssetImage(
+                                    'assets/images/banner.png',
+                                  )
+                                : FileImage(
+                                    File(foodImageSelected!.path),
+                                  ) as ImageProvider,
                             fit: BoxFit.cover),
                       ),
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (context) => Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  openCameraAndSelectImage();
+                                },
+                                leading: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.red,
+                                ),
+                                title: Text(
+                                  'Open Camera...',
+                                ),
+                              ),
+                              Divider(
+                                color: Colors.grey,
+                                height: 5.0,
+                              ),
+                              ListTile(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  openGalleryAndSelectImage();
+                                },
+                                leading: Icon(
+                                  Icons.browse_gallery,
+                                  color: Colors.blue,
+                                ),
+                                title: Text(
+                                  'Open Gallery...',
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                       icon: Icon(
                         Icons.camera_alt_rounded,
                         color: Colors.green,
@@ -179,6 +374,7 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                     bottom: MediaQuery.of(context).size.width * 0.025,
                   ),
                   child: TextField(
+                    controller: foodShopCtrl,
                     decoration: InputDecoration(
                       hintText: 'ป้อนชื่อร้านอาหารด้วย',
                       hintStyle: GoogleFonts.kanit(),
@@ -206,6 +402,7 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                     bottom: MediaQuery.of(context).size.width * 0.025,
                   ),
                   child: TextField(
+                    controller: foodPayCtrl,
                     decoration: InputDecoration(
                       hintText: 'ป้อนค่าใช้จ่าย',
                       hintStyle: GoogleFonts.kanit(),
@@ -305,9 +502,12 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                       child: Padding(
                         padding: EdgeInsets.only(right: 15),
                         child: TextField(
+                          controller: foodDateCtrl,
+                          enabled: false,
                           decoration: InputDecoration(
                             hintText: 'เลือกวันที่ด้วย',
-                            hintStyle: GoogleFonts.kanit(),
+                            hintStyle:
+                                GoogleFonts.kanit(color: Colors.grey[400]),
                             enabledBorder: OutlineInputBorder(
                               borderSide: BorderSide(color: Colors.green),
                             ),
@@ -318,9 +518,14 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.calendar_month,
-                      color: Colors.green,
+                    IconButton(
+                      onPressed: () {
+                        showCalendar();
+                      },
+                      icon: Icon(
+                        Icons.calendar_month,
+                        color: Colors.green,
+                      ),
                     ),
                   ],
                 ),
@@ -396,7 +601,20 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        //validate หน้าจอก่อนส่งข้อมูลไปบันทึกเก็บไว้ที่ Server
+                        if (foodImageSelected == null) {
+                          showWarningDialog(context, "เลือกรูปด้วย.....");
+                        } else if (foodShopCtrl.text.trim().length == 0) {
+                          showWarningDialog(context, "ป้อนชื่อร้าน......");
+                        } else if (foodPayCtrl.text.trim().length == 0) {
+                          showWarningDialog(context, "ป้อนค่าใช้จ่าย......");
+                        } else if (foodDateCtrl.text.trim().length == 0) {
+                          showWarningDialog(context, "ป้อนวันที่......");
+                        } else {
+                          //code ส่วนของการส่งข้อมูลไปบันทึกที่ server
+                        }
+                      },
                       child: Text(
                         'บันทึกการกิน',
                         style: GoogleFonts.kanit(),

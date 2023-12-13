@@ -1,9 +1,10 @@
-// ignore_for_file: prefer_const_constructors, sort_child_properties_last
+// ignore_for_file: prefer_const_constructors, sort_child_properties_last, prefer_interpolation_to_compose_strings
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_diaryfood_app/model/diaryfood.dart';
 import 'package:my_diaryfood_app/services/call_api.dart';
+import 'package:my_diaryfood_app/utils/env.dart';
 import 'package:my_diaryfood_app/views/add_diaryfood_ui.dart';
 
 class HomeUI extends StatefulWidget {
@@ -20,7 +21,7 @@ class _HomeUIState extends State<HomeUI> {
   //สร้างเมธอดที่เรียกใช้ API
   getAllDiaryfood() {
     setState(() {
-      diaryfoodDataList = CallApi.callAPIGetAllDiaryfood();
+      diaryfoodDataList = callApi.callAPIGetAllDiaryfood();
     });
   }
 
@@ -68,7 +69,7 @@ class _HomeUIState extends State<HomeUI> {
             //แสดงข้อมูลรายการที่ Get มาจาก db ที่ Server ในรูปแบบของ ListView
             Expanded(
               child: FutureBuilder(
-                  future: CallApi.callAPIGetAllDiaryfood(),
+                  future: callApi.callAPIGetAllDiaryfood(),
                   builder: (BuildContext context, AsyncSnapshot snapshot) {
                     if (snapshot.connectionState == ConnectionState.done &&
                         snapshot.hasData) {
@@ -88,8 +89,14 @@ class _HomeUIState extends State<HomeUI> {
                           itemBuilder: (context, index) {
                             return ListTile(
                               leading: Image.network(
-                                'http://192.168.1.51/mydiaryapi/images/',
+                                // Env.domainURL +
+                                //     '/mydiaryapi/images/pic1702281660252.jpg',
+                                Env.domainURL +
+                                    '/mydiaryapi/images/' +
+                                    snapshot.data[index].foodImage,
                                 fit: BoxFit.cover,
+                                height: 50,
+                                width: 50,
                               ),
                               title: Text(
                                 snapshot.data[index].foodShopname,
