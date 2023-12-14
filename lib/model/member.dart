@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_new
+
 class Member {
   String? message;
   String? memId;

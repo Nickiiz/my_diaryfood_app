@@ -1,11 +1,16 @@
 // ignore_for_file: prefer_const_constructors, prefer_interpolation_to_compose_strings, sort_child_properties_last
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_holo_date_picker/date_picker.dart';
 import 'package:flutter_holo_date_picker/i18n/date_picker_i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:my_diaryfood_app/model/diaryfood.dart';
+import 'package:my_diaryfood_app/services/call_api.dart';
 import 'package:my_diaryfood_app/utils/env.dart';
 
 class ModifyDiaryFoodUI extends StatefulWidget {
@@ -196,6 +201,76 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
     return day + '  ' + month + year;
   }
 
+  //ตัวแปรที่ใช้กับการเลือกรูป จากแกลอรี่ หรือกล้องใช้ชื่อว่า foodImageSelected
+  XFile? foodImageSelected;
+
+  //ตัวแปรเก็บรูปภาพที่แปลงเป็น basse64 เพื่อส่งไปที่ server
+  String? foodImageBasse64 = '';
+
+  //เมธอดที่ใช้ในการเปิดกล้อง หรือ เปิดแกลอรี่
+  openGalleryAndSelectImage() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.gallery, //******
+      imageQuality: 75,
+    );
+    if (photo == null) return;
+    foodImageBasse64 = base64Encode(File(photo.path).readAsBytesSync());
+    setState(() {
+      foodImageSelected = photo;
+    });
+  }
+
+  openCameraAndSelectImage() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.camera, //********
+      imageQuality: 75,
+    );
+    if (photo == null) return;
+    foodImageBasse64 = base64Encode(File(photo.path).readAsBytesSync());
+    setState(() {
+      foodImageSelected = photo;
+    });
+  }
+
+  //เมธอดแสดงข้อความเตือนจาก Validate ต่างๆบนหน้าจอ เช่นเลือกรูป ป้อนชื่อร้าน ป้อนค่าใช้จ่าย เลือกวันที่กิน
+  showWarningDialog(context, msg) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Align(
+          alignment: Alignment.center,
+          child: Text(
+            'คำเตือน',
+            style: GoogleFonts.kanit(),
+          ),
+        ),
+        content: Text(
+          msg,
+          style: GoogleFonts.kanit(),
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  'ตกลง',
+                  style: GoogleFonts.kanit(),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,9 +314,15 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
                       shape: BoxShape.circle,
                       border: Border.all(width: 4, color: Colors.green),
                       image: DecorationImage(
-                          image: NetworkImage(Env.domainURL +
-                              'mydiaryapi/images/' +
-                              widget.diaryfood!.foodImage!),
+                          image: foodImageSelected == null
+                              ? NetworkImage(
+                                  Env.domainURL +
+                                      'mydiaryapi/images/' +
+                                      widget.diaryfood!.foodImage!,
+                                )
+                              : FileImage(
+                                  File(foodImageSelected!.path),
+                                ) as ImageProvider,
                           fit: BoxFit.cover),
                     ),
                   ),
@@ -255,6 +336,7 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
                             ListTile(
                               onTap: () {
                                 Navigator.pop(context);
+                                openCameraAndSelectImage();
                               },
                               leading: Icon(
                                 Icons.camera_alt,
@@ -269,7 +351,10 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
                               height: 5.0,
                             ),
                             ListTile(
-                              onTap: () {},
+                              onTap: () {
+                                Navigator.pop(context);
+                                openGalleryAndSelectImage();
+                              },
                               leading: Icon(
                                 Icons.browse_gallery,
                                 color: Colors.blue,
@@ -535,6 +620,67 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
                   ElevatedButton(
                     onPressed: () {
                       //validate หน้าจอก่อนส่งข้อมูลไปบันทึกเก็บไว้ที่ Server
+                      if (foodShopCtrl.text.trim().length == 0) {
+                        showWarningDialog(context, "ป้อนชื่อร้าน......");
+                      } else if (foodPayCtrl.text.trim().length == 0) {
+                        showWarningDialog(context, "ป้อนค่าใช้จ่าย......");
+                      } else if (foodDateCtrl.text.trim().length == 0) {
+                        showWarningDialog(context, "ป้อนวันที่......");
+                      } else {
+                        //code ส่วนของการส่งข้อมูลไปบันทึกที่ server
+                        Diaryfood diaryfood = Diaryfood(
+                          foodId: widget.diaryfood!.foodId!,
+                          foodShopname: foodShopCtrl.text.trim(),
+                          //foodImage: foodImageBasse64,
+                          foodImage:
+                              foodImageBasse64 == '' ? '' : foodImageBasse64,
+                          foodPay: foodPayCtrl.text.trim(),
+                          foodMeal: meal.toString(),
+                          foodDate: foodDateCtrl.text.trim(),
+                          foodProvince: foodProvince,
+                        );
+                        callApi
+                            .calAPIUpdateDiaryfood(diaryfood)
+                            .then(
+                              (value) => showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'ผลการทำงาน',
+                                      style: GoogleFonts.kanit(),
+                                    ),
+                                  ),
+                                  content: Text(
+                                    'บันทึกเรียบร้อยแล้ว',
+                                    style: GoogleFonts.kanit(),
+                                  ),
+                                  actions: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            'ตกลง',
+                                            style: GoogleFonts.kanit(),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .then((value) => Navigator.pop(context));
+                      }
                     },
                     child: Text(
                       'แก้ไขการกิน',
@@ -545,7 +691,52 @@ class _ModifyDiaryFoodUIState extends State<ModifyDiaryFoodUI> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      //code ส่วนของการส่งข้อมูลไปบันทึกที่ server
+                      Diaryfood diaryfood = Diaryfood(
+                        foodId: widget.diaryfood!.foodId!,
+                      );
+                      callApi
+                          .calAPIDeleteDiaryfood(diaryfood)
+                          .then(
+                            (value) => showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Align(
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'ผลการทำงาน',
+                                    style: GoogleFonts.kanit(),
+                                  ),
+                                ),
+                                content: Text(
+                                  'ลบเรียบร้อยแล้ว',
+                                  style: GoogleFonts.kanit(),
+                                ),
+                                actions: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: Text(
+                                          'ตกลง',
+                                          style: GoogleFonts.kanit(),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .then((value) => Navigator.pop(context));
+                    },
                     child: Text(
                       'ลบ',
                       style: GoogleFonts.kanit(),

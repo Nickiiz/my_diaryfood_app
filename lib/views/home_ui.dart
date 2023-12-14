@@ -6,6 +6,7 @@ import 'package:my_diaryfood_app/model/diaryfood.dart';
 import 'package:my_diaryfood_app/services/call_api.dart';
 import 'package:my_diaryfood_app/utils/env.dart';
 import 'package:my_diaryfood_app/views/add_diaryfood_ui.dart';
+import 'package:my_diaryfood_app/views/login_ui.dart';
 import 'package:my_diaryfood_app/views/modify_diaryfood_ui.dart';
 
 class HomeUI extends StatefulWidget {
@@ -44,6 +45,18 @@ class _HomeUIState extends State<HomeUI> {
         ),
         centerTitle: true,
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LogInUI(),
+                  ));
+            },
+            icon: Icon(Icons.exit_to_app),
+          )
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -113,21 +126,25 @@ class _HomeUIState extends State<HomeUI> {
                                   ),
                                 ).then((value) => getAllDiaryfood());
                               },
-                              leading: Image.network(
-                                // Env.domainURL +
-                                //     '/mydiaryapi/images/pic1702281660252.jpg',
-                                Env.domainURL +
-                                    '/mydiaryapi/images/' +
-                                    snapshot.data[index].foodImage,
-                                fit: BoxFit.cover,
-                                height: 50,
-                                width: 50,
+                              leading: ClipOval(
+                                child: Image.network(
+                                  // Env.domainURL +
+                                  //     '/mydiaryapi/images/pic1702281660252.jpg',
+                                  Env.domainURL +
+                                      '/mydiaryapi/images/' +
+                                      snapshot.data[index].foodImage,
+                                  fit: BoxFit.cover,
+                                  height: 50,
+                                  width: 50,
+                                ),
                               ),
                               title: Text(
                                 snapshot.data[index].foodShopname,
+                                style: GoogleFonts.kanit(),
                               ),
                               subtitle: Text(
                                 snapshot.data[index].foodDate,
+                                style: GoogleFonts.kanit(),
                               ),
                             );
                           },

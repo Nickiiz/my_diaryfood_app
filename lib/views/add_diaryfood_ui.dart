@@ -191,6 +191,8 @@ class _AddDiaryFoodUIState extends State<AddDiaryFoodUI> {
 
   //ตัวแปรที่ใช้กับการเลือกรูป จากแกลอรี่ หรือกล้องใช้ชื่อว่า foodImageSelected
   XFile? foodImageSelected;
+
+  //ตัวแปรเก็บรูปภาพที่แปลงเป็น basse64 เพื่อส่งไปที่ server
   String? foodImageBasse64 = '';
 
   //เมธอดที่ใช้ในการเปิดกล้อง หรือ เปิดแกลอรี่
